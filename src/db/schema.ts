@@ -77,7 +77,7 @@ export const subscriptions = pgTable("subscription", {
 });
 
 export const webhookEvents = pgTable("webhookEvent", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
   createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
   eventName: text("eventName").notNull(),
   processed: boolean("processed").default(false),

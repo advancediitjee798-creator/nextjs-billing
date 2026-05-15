@@ -15,15 +15,16 @@ export async function POST(request: Request) {
   const rawBody = await request.text();
   const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
   const hmac = crypto.createHmac("sha256", secret);
-  const digest = Buffer.from(hmac.update(rawBody).digest("hex"), "utf8");
-  const signature = Buffer.from(
-    request.headers.get("x-signature") ?? "",
-    "utf8"
-  );
+  const digest = Uint8Array.from(
+  Buffer.from(hmac.update(rawBody).digest("hex"), "utf8")
+);
+const signature = Uint8Array.from(
+  Buffer.from(request.headers.get("x-signature") ?? "", "utf8")
+);
 
-  if (!crypto.timingSafeEqual(digest, signature)) {
-    return new Response("Invalid signature", { status: 400 });
-  }
+if (!crypto.timingSafeEqual(digest, signature)) {
+  return new Response("Invalid signature", { status: 400 });
+}
 
   const data = JSON.parse(rawBody) as unknown;
 

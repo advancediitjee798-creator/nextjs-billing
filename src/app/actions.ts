@@ -294,7 +294,7 @@ export async function processWebhookEvent(webhookEvent: NewWebhookEvent) {
   const dbwebhookEvent = await db
     .select()
     .from(webhookEvents)
-    .where(eq(webhookEvents.id, webhookEvent.id));
+    .where(eq(webhookEvents.id, webhookEvent.id ?? 0));
 
   if (dbwebhookEvent.length < 1) {
     throw new Error(
@@ -390,7 +390,7 @@ export async function processWebhookEvent(webhookEvent: NewWebhookEvent) {
         processed: true,
         processingError,
       })
-      .where(eq(webhookEvents.id, webhookEvent.id));
+      .where(eq(webhookEvents.id, webhookEvent.id ?? 0));
   }
 }
 

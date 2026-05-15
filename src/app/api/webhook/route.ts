@@ -1,55 +1,48 @@
-import crypto from "node:crypto";
-import { processWebhookEvent, storeWebhookEvent } from "@/app/actions";
-import { webhookHasMeta } from "@/lib/typeguards";
+// app/api/webhook/route.ts
+import crypto from 'node:crypto';
+import { lemonSqueezySetup } from '@lemonsqueezy/lemonsqueezy.js';
 
-export async function POST(request: Request) {
-  if (!process.env.LEMONSQUEEZY_WEBHOOK_SECRET) {
-    return new Response("Lemon Squeezy Webhook Secret not set in .env", {
-      status: 500,
-    });
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+function verifySignature(rawBody: string, signature: string): boolean {
+  const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET ?? '';
+  const hmac = crypto.createHmac('sha256', secret);
+  const digest = hmac.update(rawBody).digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(signature));
+}
+
+interface LemonSqueezyPayload {
+  meta: {
+    event_name: string;
+  };
+}
+
+export async function POST(req: Request) {
+  lemonSqueezySetup({
+    apiKey: process.env.LEMONSQUEEZY_API_KEY ?? '',
+  });
+
+  const rawBody = await req.text();
+  const signature = req.headers.get('x-signature') ?? '';
+
+  if (!verifySignature(rawBody, signature)) {
+    return new Response('Invalid signature', { status: 401 });
   }
 
-  /* -------------------------------------------------------------------------- */
-  /*             First, make sure the request is from Lemon Squeezy.            */
-  /* -------------------------------------------------------------------------- */
+  const payload = JSON.parse(rawBody) as LemonSqueezyPayload;
+  const eventName = payload.meta.event_name;
 
-  // Get the raw body content.
-  const rawBody = await request.text();
-
-  // Get the webhook secret from the environment variables.
-  const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
-
-  // Get the signature from the request headers.
-  const signature = Buffer.from(
-    request.headers.get("X-Signature") ?? "",
-    "hex",
-  );
-
-  // Create a HMAC-SHA256 hash of the raw body content using the secret and
-  // compare it to the signature.
-  const hmac = Buffer.from(
-    crypto.createHmac("sha256", secret).update(rawBody).digest("hex"),
-    "hex",
-  );
-
-  if (!crypto.timingSafeEqual(hmac, signature)) {
-    return new Response("Invalid signature", { status: 400 });
+  switch (eventName) {
+    case 'order_created':
+      // handle order
+      break;
+    case 'subscription_created':
+      // handle subscription
+      break;
+    default:
+      break;
   }
 
-  /* -------------------------------------------------------------------------- */
-  /*                                Valid request                               */
-  /* -------------------------------------------------------------------------- */
-
-  const data = JSON.parse(rawBody) as unknown;
-
-  // Type guard to check if the object has a 'meta' property.
-  if (webhookHasMeta(data)) {
-    const webhookEventId = await storeWebhookEvent(data.meta.event_name, data);
-
-    await processWebhookEvent(webhookEventId);
-
-    return new Response("OK", { status: 200 });
-  }
-
-  return new Response("Data invalid", { status: 400 });
+  return new Response('OK', { status: 200 });
 }

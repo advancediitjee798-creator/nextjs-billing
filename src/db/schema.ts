@@ -2,7 +2,11 @@ import { boolean, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core"
 import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
 
-const sql = neon(process.env.POSTGRES_URL!);
+if (!process.env.POSTGRES_URL) {
+  throw new Error("POSTGRES_URL is not defined in your environment variables.");
+}
+
+const sql = neon(process.env.POSTGRES_URL);
 
 export const users = pgTable("user", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),

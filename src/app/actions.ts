@@ -274,11 +274,10 @@ export async function storeWebhookEvent(
 
   const returnedValue = await db
     .insert(webhookEvents)
-    .values({
-      id,
-      eventName,
-      processed: false,
-      body,
+.values({
+  eventName,
+  processed: false,
+  body,
     })
     .onConflictDoNothing({ target: plans.id })
     .returning();

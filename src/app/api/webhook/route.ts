@@ -29,7 +29,7 @@ if (!crypto.timingSafeEqual(digest, signature)) {
   const data = JSON.parse(rawBody) as unknown;
 
   if (webhookHasMeta(data)) {
-    const webhookEvent = await storeWebhookEvent(data.meta.event_name, data);
+    const webhookEvent = await storeWebhookEvent(data.meta.event_name, rawBody);
     void processWebhookEvent(webhookEvent);
     return new Response("OK", { status: 200 });
   }

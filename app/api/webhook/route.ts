@@ -2,7 +2,7 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-import { lemonSqueezySetup, webhooks } from '@lemonsqueezy/lemonsqueezy.js';
+import { lemonSqueezySetup } from '@lemonsqueezy/lemonsqueezy.js';
 
 export async function POST(req: Request) {
   lemonSqueezySetup({
@@ -12,5 +12,5 @@ export async function POST(req: Request) {
   const rawBody = await req.text();
   const signature = req.headers.get('x-signature') ?? '';
 
-  // your verification + handling logic
+  // your verification + handling logic here
 }

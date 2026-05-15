@@ -42,7 +42,7 @@ export const verificationTokens = pgTable("verificationToken", {
 });
 
 export const plans = pgTable("plan", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
   productId: integer("productId").notNull(),
   productName: text("productName"),
   variantId: integer("variantId").notNull().unique(),
@@ -58,7 +58,7 @@ export const plans = pgTable("plan", {
 });
 
 export const subscriptions = pgTable("subscription", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
   lemonSqueezyId: text("lemonSqueezyId").unique().notNull(),
   orderId: integer("orderId").notNull(),
   name: text("name").notNull(),

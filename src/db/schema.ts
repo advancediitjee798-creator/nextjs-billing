@@ -81,18 +81,25 @@ export const subscriptions = pgTable("subscription", {
 });
 
 export const webhookEvents = pgTable("webhookEvent", {
-  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+ id: integer("id").primaryKey().generatedByDefaultAsIdentity({ name: "webhookEvent_id_seq", cache: 1 }),
   createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
   eventName: text("eventName").notNull(),
   processed: boolean("processed").default(false),
   body: text("body").notNull(),
   processingError: text("processingError"),
 });
-
+export const singlePurchases = pgTable("single_purchase", {
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  userId: text("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  writeupSlug: text("writeupSlug").notNull(),
+  lemonSqueezyOrderId: text("lemonSqueezyOrderId").notNull(),
+  createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
+});
+export type NewSinglePurchase = typeof singlePurchases.$inferInsert;
 export type NewPlan = typeof plans.$inferInsert;
 export type NewSubscription = typeof subscriptions.$inferInsert;
 export type NewWebhookEvent = typeof webhookEvents.$inferInsert;
 
 export const db = drizzle(sql, {
-  schema: { users, accounts, sessions, verificationTokens, plans, subscriptions, webhookEvents },
+  schema: { users, accounts, sessions, verificationTokens, plans, subscriptions, webhookEvents, singlePurchases },
 });

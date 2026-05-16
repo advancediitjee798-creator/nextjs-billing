@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion -- checked in configureLemonSqueezy() */
 "use server";
 
-import crypto from "node:crypto";
 import {
   cancelSubscription,
   createCheckout,
@@ -325,15 +324,16 @@ export async function processWebhookEvent(webhookEvent: NewWebhookEvent) {
         }
       }
     } else if (webhookEvent.eventName.startsWith("order_")) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const attributes = eventBody.data.attributes as Record<string, unknown>;
-      const variantId = (attributes.first_order_item as Record<string, unknown>)?.variant_id;
+      const firstOrderItem = attributes.first_order_item as Record<string, unknown> | undefined;
+      const customData = attributes.custom_data as Record<string, unknown> | undefined;
+      const variantId = firstOrderItem !== undefined ? firstOrderItem.variant_id : undefined;
       const userEmail = attributes.user_email as string;
-      const slug = (attributes.custom_data as Record<string, unknown>)?.slug as string | undefined;
+      const slug = customData !== undefined ? (customData.slug as string | undefined) : undefined;
 
       const SINGLE_VARIANT = Number(process.env.SINGLE_PURCHASE_VARIANT_ID);
 
-      if (variantId === SINGLE_VARIANT && slug && userEmail) {
+      if (variantId === SINGLE_VARIANT && slug !== undefined && userEmail) {
         const user = await db.query.users.findFirst({
           where: eq(users.email, userEmail),
         });

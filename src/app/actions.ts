@@ -324,7 +324,7 @@ export async function processWebhookEvent(webhookEvent: NewWebhookEvent) {
           console.error(error);
         }
       }
-    } } else if (webhookEvent.eventName.startsWith("order_")) {
+    } else if (webhookEvent.eventName.startsWith("order_")) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const attributes = eventBody.data.attributes as Record<string, unknown>;
       const variantId = (attributes.first_order_item as Record<string, unknown>)?.variant_id;

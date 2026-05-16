@@ -403,8 +403,7 @@ export async function processWebhookEvent(webhookEvent: NewWebhookEvent) {
     }
   }
 }
-      // Save orders; eventBody is a "Order"
-      /* Not implemented */
+}
     } else if (webhookEvent.eventName.startsWith("license_")) {
       // Save license keys; eventBody is a "License key"
       /* Not implemented */

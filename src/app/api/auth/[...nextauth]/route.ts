@@ -1,5 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db, users } from '@/db/schema';
+import { handlers } from "@/auth";
+export const { GET, POST } = handlers;
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

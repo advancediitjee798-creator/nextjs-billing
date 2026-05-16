@@ -82,8 +82,7 @@ export async function getCheckoutURL(variantId: number, embed = false) {
 }
 
 /**
- * This action will check if a webhook exists on Lemon Squeezy. It will return
- * the webhook if it exists, otherwise it will return undefined.
+ * This action will check if a webhook exists on Lemon Squeezy.
  */
 export async function hasWebhook() {
   configureLemonSqueezy();
@@ -94,12 +93,10 @@ export async function hasWebhook() {
     );
   }
 
-  // Check if a webhook exists on Lemon Squeezy.
   const allWebhooks = await listWebhooks({
     filter: { storeId: process.env.LEMONSQUEEZY_STORE_ID },
   });
 
-  // Check if WEBHOOK_URL ends with a slash. If not, add it.
   let webhookUrl = process.env.WEBHOOK_URL;
   if (!webhookUrl.endsWith("/")) {
     webhookUrl += "/";
@@ -116,8 +113,7 @@ export async function hasWebhook() {
 }
 
 /**
- * This action will set up a webhook on Lemon Squeezy to listen to
- * Subscription events. It will only set up the webhook if it does not exist.
+ * This action will set up a webhook on Lemon Squeezy.
  */
 export async function setupWebhook() {
   configureLemonSqueezy();
@@ -128,28 +124,25 @@ export async function setupWebhook() {
     );
   }
 
-  // Check if WEBHOOK_URL ends with a slash. If not, add it.
   let webhookUrl = process.env.WEBHOOK_URL;
   if (!webhookUrl.endsWith("/")) {
     webhookUrl += "/";
   }
   webhookUrl += "api/webhook";
 
-  // Do not set a webhook on Lemon Squeezy if it already exists.
   let webhook = await hasWebhook();
 
-  // If the webhook does not exist, create it.
   if (!webhook) {
     const newWebhook = await createWebhook(process.env.LEMONSQUEEZY_STORE_ID!, {
       secret: process.env.LEMONSQUEEZY_WEBHOOK_SECRET!,
       url: webhookUrl,
-      testMode: true, // will create a webhook in Test mode only!
+      testMode: true,
       events: [
-  "subscription_created",
-  "subscription_expired",
-  "subscription_updated",
-  "order_created",
-],
+        "subscription_created",
+        "subscription_expired",
+        "subscription_updated",
+        "order_created",
+      ],
     });
 
     webhook = newWebhook.data?.data;
@@ -160,17 +153,14 @@ export async function setupWebhook() {
 
 /**
  * This action will sync the product variants from Lemon Squeezy with the
- * Plans database model. It will only sync the 'subscription' variants.
+ * Plans database model.
  */
 export async function syncPlans() {
   configureLemonSqueezy();
 
-  // Fetch all the variants from the database.
   const productVariants: NewPlan[] = await db.select().from(plans);
 
-  // Helper function to add a variant to the productVariants array and sync it with the database.
   async function _addVariant(variant: NewPlan) {
-    // Sync the variant with the plan in the database.
     await db
       .insert(plans)
       .values(variant)
@@ -179,35 +169,27 @@ export async function syncPlans() {
     productVariants.push(variant);
   }
 
-  // Fetch products from the Lemon Squeezy store.
   const products = await listProducts({
     filter: { storeId: process.env.LEMONSQUEEZY_STORE_ID },
     include: ["variants"],
   });
 
-  // Loop through all the variants.
   const allVariants = products.data?.included as Variant["data"][] | undefined;
 
-  // for...of supports asynchronous operations, unlike forEach.
   if (allVariants) {
     for (const v of allVariants) {
       const variant = v.attributes;
 
-      // Skip draft variants or if there's more than one variant, skip the default
-      // variant. See https://docs.lemonsqueezy.com/api/variants
       if (
         variant.status === "draft" ||
         (allVariants.length !== 1 && variant.status === "pending")
       ) {
-        // `return` exits the function entirely, not just the current iteration.
         continue;
       }
 
-      // Fetch the Product name.
       const productName =
         (await getProduct(variant.product_id)).data?.data.attributes.name ?? "";
 
-      // Fetch the Price object.
       const variantPriceObject = await listPrices({
         filter: {
           variantId: v.id,
@@ -233,7 +215,6 @@ export async function syncPlans() {
       const isSubscription =
         currentPriceObj?.attributes.category === "subscription";
 
-      // If not a subscription, skip it.
       if (!isSubscription) {
         continue;
       }
@@ -262,8 +243,6 @@ export async function syncPlans() {
 
 /**
  * This action will store a webhook event in the database.
- * @param eventName - The name of the event.
- * @param body - The body of the event.
  */
 export async function storeWebhookEvent(
   eventName: string,
@@ -277,10 +256,10 @@ export async function storeWebhookEvent(
 
   const returnedValue = await db
     .insert(webhookEvents)
-.values({
-  eventName,
-  processed: false,
-  body,
+    .values({
+      eventName,
+      processed: false,
+      body,
     })
     .onConflictDoNothing({ target: plans.id })
     .returning();
@@ -325,7 +304,6 @@ export async function processWebhookEvent(webhookEvent: NewWebhookEvent) {
       const attributes = eventBody.data.attributes;
       const variantId = attributes.variant_id as string;
 
-      // We assume that the Plan table is up to date.
       const plan = await db
         .select()
         .from(plans)
@@ -334,11 +312,8 @@ export async function processWebhookEvent(webhookEvent: NewWebhookEvent) {
       if (plan.length < 1) {
         processingError = `Plan with variantId ${variantId} not found.`;
       } else {
-        // Update the subscription in the database.
-
         const priceId = attributes.first_subscription_item.price_id;
 
-        // Get the price data from Lemon Squeezy.
         const priceData = await getPrice(priceId);
         if (priceData.error) {
           processingError = `Failed to get the price data for the subscription ${eventBody.data.id}.`;
@@ -367,7 +342,6 @@ export async function processWebhookEvent(webhookEvent: NewWebhookEvent) {
           planId: plan[0].id,
         };
 
-        // Create/update subscription in the database.
         try {
           await db.insert(subscriptions).values(updateData).onConflictDoUpdate({
             target: subscriptions.lemonSqueezyId,
@@ -378,8 +352,8 @@ export async function processWebhookEvent(webhookEvent: NewWebhookEvent) {
           console.error(error);
         }
       }
-    } }}
     } else if (webhookEvent.eventName.startsWith("order_")) {
+      // Handle single write-up purchases
       const attributes = eventBody.data.attributes;
       const variantId = attributes.first_order_item?.variant_id;
       const userEmail = attributes.user_email as string;
@@ -404,7 +378,7 @@ export async function processWebhookEvent(webhookEvent: NewWebhookEvent) {
       }
     } else if (webhookEvent.eventName.startsWith("license_")) {
       // Save license keys; eventBody is a "License key"
-      /* Not implemented */
+      // Not implemented.
     }
 
     // Update the webhook event in the database.
@@ -440,9 +414,7 @@ export async function getUserSubscriptions() {
 }
 
 /**
- * This action will get the subscription URLs (update_payment_method and
- * customer_portal) for the given subscription ID.
- *
+ * This action will get the subscription URLs for the given subscription ID.
  */
 export async function getSubscriptionURLs(id: string) {
   configureLemonSqueezy();
@@ -463,10 +435,8 @@ export async function getSubscriptionURLs(id: string) {
 export async function cancelSub(id: string) {
   configureLemonSqueezy();
 
-  // Get user subscriptions
   const userSubscriptions = await getUserSubscriptions();
 
-  // Check if the subscription exists
   const subscription = userSubscriptions.find(
     (sub) => sub.lemonSqueezyId === id,
   );
@@ -481,7 +451,6 @@ export async function cancelSub(id: string) {
     throw new Error(cancelledSub.error.message);
   }
 
-  // Update the db
   try {
     await db
       .update(subscriptions)
@@ -506,10 +475,8 @@ export async function cancelSub(id: string) {
 export async function pauseUserSubscription(id: string) {
   configureLemonSqueezy();
 
-  // Get user subscriptions
   const userSubscriptions = await getUserSubscriptions();
 
-  // Check if the subscription exists
   const subscription = userSubscriptions.find(
     (sub) => sub.lemonSqueezyId === id,
   );
@@ -524,7 +491,6 @@ export async function pauseUserSubscription(id: string) {
     },
   });
 
-  // Update the db
   try {
     await db
       .update(subscriptions)
@@ -550,10 +516,8 @@ export async function pauseUserSubscription(id: string) {
 export async function unpauseUserSubscription(id: string) {
   configureLemonSqueezy();
 
-  // Get user subscriptions
   const userSubscriptions = await getUserSubscriptions();
 
-  // Check if the subscription exists
   const subscription = userSubscriptions.find(
     (sub) => sub.lemonSqueezyId === id,
   );
@@ -564,7 +528,6 @@ export async function unpauseUserSubscription(id: string) {
 
   const returnedSub = await updateSubscription(id, { pause: null });
 
-  // Update the db
   try {
     await db
       .update(subscriptions)
@@ -576,7 +539,7 @@ export async function unpauseUserSubscription(id: string) {
       })
       .where(eq(subscriptions.lemonSqueezyId, id));
   } catch (error) {
-    throw new Error(`Failed to pause Subscription #${id} in the database.`);
+    throw new Error(`Failed to unpause Subscription #${id} in the database.`);
   }
 
   revalidatePath("/");
@@ -590,10 +553,8 @@ export async function unpauseUserSubscription(id: string) {
 export async function changePlan(currentPlanId: number, newPlanId: number) {
   configureLemonSqueezy();
 
-  // Get user subscriptions
   const userSubscriptions = await getUserSubscriptions();
 
-  // Check if the subscription exists
   const subscription = userSubscriptions.find(
     (sub) => sub.planId === currentPlanId,
   );
@@ -604,19 +565,16 @@ export async function changePlan(currentPlanId: number, newPlanId: number) {
     );
   }
 
-  // Get the new plan details from the database.
   const newPlan = await db
     .select()
     .from(plans)
     .where(eq(plans.id, newPlanId))
     .then(takeUniqueOrThrow);
 
-  // Send request to Lemon Squeezy to change the subscription.
   const updatedSub = await updateSubscription(subscription.lemonSqueezyId, {
     variantId: newPlan.variantId,
   });
 
-  // Save in db
   try {
     await db
       .update(subscriptions)

@@ -375,7 +375,31 @@ export async function processWebhookEvent(webhookEvent: NewWebhookEvent) {
           console.error(error);
         }
       }
-    } else if (webhookEvent.eventName.startsWith("order_")) {
+    } } else if (webhookEvent.eventName.startsWith("order_")) {
+  const attributes = eventBody.data.attributes;
+  const variantId = attributes.first_order_item?.variant_id;
+  const userEmail = attributes.user_email as string;
+  const slug = attributes.custom_data?.slug as string | undefined;
+
+  const SINGLE_VARIANT = Number(process.env.SINGLE_PURCHASE_VARIANT_ID);
+
+  if (variantId === SINGLE_VARIANT && slug && userEmail) {
+    // Find the user by email
+    const user = await db.query.users.findFirst({
+      where: eq(users.email, userEmail),
+    });
+
+    if (user) {
+      await db.insert(singlePurchases).values({
+        userId: user.id,
+        writeupSlug: slug,
+        lemonSqueezyOrderId: String(eventBody.data.id),
+      });
+    } else {
+      processingError = `User with email ${userEmail} not found for single purchase.`;
+    }
+  }
+}
       // Save orders; eventBody is a "Order"
       /* Not implemented */
     } else if (webhookEvent.eventName.startsWith("license_")) {

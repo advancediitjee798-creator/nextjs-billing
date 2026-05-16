@@ -24,6 +24,8 @@ import {
   plans,
   subscriptions,
   webhookEvents,
+  singlePurchases,
+  users,
   type NewPlan,
   type NewSubscription,
   type NewWebhookEvent,

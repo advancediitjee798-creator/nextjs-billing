@@ -231,8 +231,6 @@ export async function storeWebhookEvent(
     throw new Error("POSTGRES_URL is not set");
   }
 
-  const id = crypto.randomInt(100000000, 1000000000);
-
   const returnedValue = await db
     .insert(webhookEvents)
     .values({
@@ -326,11 +324,12 @@ export async function processWebhookEvent(webhookEvent: NewWebhookEvent) {
           console.error(error);
         }
       }
-    } else if (webhookEvent.eventName.startsWith("order_")) {
-      const attributes = eventBody.data.attributes as Record<string, any>;
-      const variantId = attributes.first_order_item?.variant_id;
+    } } else if (webhookEvent.eventName.startsWith("order_")) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const attributes = eventBody.data.attributes as Record<string, unknown>;
+      const variantId = (attributes.first_order_item as Record<string, unknown>)?.variant_id;
       const userEmail = attributes.user_email as string;
-      const slug = attributes.custom_data?.slug as string | undefined;
+      const slug = (attributes.custom_data as Record<string, unknown>)?.slug as string | undefined;
 
       const SINGLE_VARIANT = Number(process.env.SINGLE_PURCHASE_VARIANT_ID);
 

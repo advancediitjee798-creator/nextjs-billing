@@ -35,16 +35,10 @@ import { webhookHasData, webhookHasMeta } from "@/lib/typeguards";
 import { takeUniqueOrThrow } from "@/lib/utils";
 import { auth, signOut } from "../auth";
 
-/**
- * This action will log out the current user.
- */
 export async function logout() {
   await signOut();
 }
 
-/**
- * This action will create a checkout on Lemon Squeezy.
- */
 export async function getCheckoutURL(variantId: number, embed = false) {
   configureLemonSqueezy();
 
@@ -81,9 +75,6 @@ export async function getCheckoutURL(variantId: number, embed = false) {
   return checkout.data?.data.attributes.url;
 }
 
-/**
- * This action will check if a webhook exists on Lemon Squeezy.
- */
 export async function hasWebhook() {
   configureLemonSqueezy();
 
@@ -112,9 +103,6 @@ export async function hasWebhook() {
   return webhook;
 }
 
-/**
- * This action will set up a webhook on Lemon Squeezy.
- */
 export async function setupWebhook() {
   configureLemonSqueezy();
 
@@ -151,10 +139,6 @@ export async function setupWebhook() {
   revalidatePath("/");
 }
 
-/**
- * This action will sync the product variants from Lemon Squeezy with the
- * Plans database model.
- */
 export async function syncPlans() {
   configureLemonSqueezy();
 
@@ -191,9 +175,7 @@ export async function syncPlans() {
         (await getProduct(variant.product_id)).data?.data.attributes.name ?? "";
 
       const variantPriceObject = await listPrices({
-        filter: {
-          variantId: v.id,
-        },
+        filter: { variantId: v.id },
       });
 
       const currentPriceObj = variantPriceObject.data?.data.at(0);
@@ -241,9 +223,6 @@ export async function syncPlans() {
   return productVariants;
 }
 
-/**
- * This action will store a webhook event in the database.
- */
 export async function storeWebhookEvent(
   eventName: string,
   body: NewWebhookEvent["body"],
@@ -267,9 +246,6 @@ export async function storeWebhookEvent(
   return returnedValue[0];
 }
 
-/**
- * This action will process a webhook event in the database.
- */
 export async function processWebhookEvent(webhookEvent: NewWebhookEvent) {
   configureLemonSqueezy();
 
@@ -297,10 +273,8 @@ export async function processWebhookEvent(webhookEvent: NewWebhookEvent) {
     processingError = "Event body is missing the 'meta' property.";
   } else if (webhookHasData(eventBody)) {
     if (webhookEvent.eventName.startsWith("subscription_payment_")) {
-      // Save subscription invoices; eventBody is a SubscriptionInvoice
       // Not implemented.
     } else if (webhookEvent.eventName.startsWith("subscription_")) {
-      // Save subscription events; obj is a Subscription
       const attributes = eventBody.data.attributes;
       const variantId = attributes.variant_id as string;
 
@@ -352,8 +326,7 @@ export async function processWebhookEvent(webhookEvent: NewWebhookEvent) {
           console.error(error);
         }
       }
-    } } else if (webhookEvent.eventName.startsWith("order_")) {
-      // Handle single write-up purchases
+    } else if (webhookEvent.eventName.startsWith("order_")) {
       const attributes = eventBody.data.attributes as Record<string, any>;
       const variantId = attributes.first_order_item?.variant_id;
       const userEmail = attributes.user_email as string;
@@ -377,11 +350,9 @@ export async function processWebhookEvent(webhookEvent: NewWebhookEvent) {
         }
       }
     } else if (webhookEvent.eventName.startsWith("license_")) {
-      // Save license keys; eventBody is a "License key"
       // Not implemented.
     }
 
-    // Update the webhook event in the database.
     await db
       .update(webhookEvents)
       .set({
@@ -392,9 +363,6 @@ export async function processWebhookEvent(webhookEvent: NewWebhookEvent) {
   }
 }
 
-/**
- * This action will get the subscriptions for the current user.
- */
 export async function getUserSubscriptions() {
   const session = await auth();
   const userId = session?.user?.id;
@@ -413,9 +381,6 @@ export async function getUserSubscriptions() {
   return userSubscriptions;
 }
 
-/**
- * This action will get the subscription URLs for the given subscription ID.
- */
 export async function getSubscriptionURLs(id: string) {
   configureLemonSqueezy();
   const subscription = await getSubscription(id);
@@ -429,9 +394,6 @@ export async function getSubscriptionURLs(id: string) {
   return subscription.data.data.attributes.urls;
 }
 
-/**
- * This action will cancel a subscription on Lemon Squeezy.
- */
 export async function cancelSub(id: string) {
   configureLemonSqueezy();
 
@@ -469,9 +431,6 @@ export async function cancelSub(id: string) {
   return cancelledSub;
 }
 
-/**
- * This action will pause a subscription on Lemon Squeezy.
- */
 export async function pauseUserSubscription(id: string) {
   configureLemonSqueezy();
 
@@ -486,9 +445,7 @@ export async function pauseUserSubscription(id: string) {
   }
 
   const returnedSub = await updateSubscription(id, {
-    pause: {
-      mode: "void",
-    },
+    pause: { mode: "void" },
   });
 
   try {
@@ -510,9 +467,6 @@ export async function pauseUserSubscription(id: string) {
   return returnedSub;
 }
 
-/**
- * This action will unpause a subscription on Lemon Squeezy.
- */
 export async function unpauseUserSubscription(id: string) {
   configureLemonSqueezy();
 
@@ -547,9 +501,6 @@ export async function unpauseUserSubscription(id: string) {
   return returnedSub;
 }
 
-/**
- * This action will change the plan of a subscription on Lemon Squeezy.
- */
 export async function changePlan(currentPlanId: number, newPlanId: number) {
   configureLemonSqueezy();
 

@@ -352,9 +352,9 @@ export async function processWebhookEvent(webhookEvent: NewWebhookEvent) {
           console.error(error);
         }
       }
-    } else if (webhookEvent.eventName.startsWith("order_")) {
+    } } else if (webhookEvent.eventName.startsWith("order_")) {
       // Handle single write-up purchases
-      const attributes = eventBody.data.attributes;
+      const attributes = eventBody.data.attributes as Record<string, any>;
       const variantId = attributes.first_order_item?.variant_id;
       const userEmail = attributes.user_email as string;
       const slug = attributes.custom_data?.slug as string | undefined;

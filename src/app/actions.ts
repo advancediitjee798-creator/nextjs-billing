@@ -376,7 +376,7 @@ export async function processWebhookEvent(webhookEvent: NewWebhookEvent) {
           processingError = `User with email ${userEmail} not found for single purchase.`;
         }
       }
-    } } else if (webhookEvent.eventName.startsWith("license_")) {
+    } else if (webhookEvent.eventName.startsWith("license_")) {
       // Save license keys; eventBody is a "License key"
       // Not implemented.
     }

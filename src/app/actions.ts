@@ -145,10 +145,11 @@ export async function setupWebhook() {
       url: webhookUrl,
       testMode: true, // will create a webhook in Test mode only!
       events: [
-        "subscription_created",
-        "subscription_expired",
-        "subscription_updated",
-      ],
+  "subscription_created",
+  "subscription_expired",
+  "subscription_updated",
+  "order_created",
+],
     });
 
     webhook = newWebhook.data?.data;
